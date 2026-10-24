@@ -31,8 +31,13 @@ def is_exempt(guild, user):
     return False
 
 async def send_log(guild, text):
-    ch = discord.utils.get(guild.text_channels, name=LOG_CHANNEL_NAME)
-    if ch: await ch.send(text)
+    for ch in guild.text_channels:
+        if "ban" in ch.name.lower():
+            try:
+                await ch.send(text)
+                return
+            except:
+                pass
 
 @bot.event
 async def on_ready():
