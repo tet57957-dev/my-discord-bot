@@ -193,11 +193,11 @@ async def on_webhooks_update(channel):
 
 @bot.event
 async def on_message(message):
+    global PAUSED
     if message.author.bot: return
     # ถ้าบอทหยุดทำงานอยู่ ให้หัวดิสพิมพ์ !on เพื่อเปิดเท่านั้น
     if PAUSED:
         if message.content.strip() == "!on" and (message.author.id == OWNER_ID or message.author.id == message.guild.owner_id):
-            global PAUSED
             PAUSED = False
             await message.channel.send("✅ เปิดบอทแล้ว ทำงานปกติ!")
             return
