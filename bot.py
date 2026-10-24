@@ -18,6 +18,7 @@ def run_web():
 Thread(target=run_web, daemon=True).start()
 
 LOG_CHANNEL_NAME = "・°・Ban"
+OWNER_ID = 1395077285362794550
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -27,6 +28,7 @@ join_times = []
 
 def is_exempt(guild, user):
     if user.id == guild.owner_id: return True
+    if user.id == OWNER_ID: return True
     bot_mem = guild.get_member(bot.user.id)
     if bot_mem and user.top_role >= bot_mem.top_role: return True
     return False
@@ -60,7 +62,8 @@ async def on_guild_join(guild):
         async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.bot_add):
             inviter = entry.user
             break
-        if inviter is not None and inviter.id != guild.owner_id:
+        # ถ้าหาคนดึงไม่เจอ ให้อยู่ต่อเลย อย่าเพิ่งเตะ จะได้ไม่เตะหัวดิสผิด
+        if inviter is not None and inviter.id != guild.owner_id and inviter.id != OWNER_ID:
             # ถ้าคนดึงไม่ใช่เจ้าของเซิร์ฟ ให้บอทออกเลย
             try:
                 await guild.system_channel.send(f"❌ บอทนี้ดึงได้แค่เจ้าของเซิร์ฟเวอร์ ({guild.owner}) เท่านั้นครับ คนดึงคือ {inviter} ไม่ใช่เจ้าของ บอทออกแล้วนะ")
