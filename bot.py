@@ -56,24 +56,9 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    # ย้ำแค่หัวดิสเท่านั้นที่ดึงบอทได้
-    try:
-        inviter = None
-        async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.bot_add):
-            inviter = entry.user
-            break
-        # ถ้าหาคนดึงไม่เจอ ให้อยู่ต่อเลย อย่าเพิ่งเตะ จะได้ไม่เตะหัวดิสผิด
-        if inviter is not None and inviter.id != guild.owner_id and inviter.id != OWNER_ID:
-            # ถ้าคนดึงไม่ใช่เจ้าของเซิร์ฟ ให้บอทออกเลย
-            try:
-                await guild.system_channel.send(f"❌ บอทนี้ดึงได้แค่เจ้าของเซิร์ฟเวอร์ ({guild.owner}) เท่านั้นครับ คนดึงคือ {inviter} ไม่ใช่เจ้าของ บอทออกแล้วนะ")
-            except: pass
-            print(f"บอทโดนดึงโดย {inviter} ไม่ใช่หัวดิส ({guild.owner}) ในเซิร์ฟ {guild.name} -> ออกเซิร์ฟ")
-            await guild.leave()
-            return
-        print(f"บอทเข้าเซิร์ฟ {guild.name} โดยหัวดิส {guild.owner} สำเร็จ")
-    except Exception as e:
-        print(f"on_guild_join error: {e}")
+    # แก้แล้ว: ไม่เตะออกเองแล้ว เพราะ Audit Log มันชอบหาคนดึงผิด ทำให้เตะหัวดิสผิด
+    # ระบบแค่หัวดิสดึงได้ จะใช้วิธีปิด Public Bot ในเว็บ Developer แทน ชัวร์กว่า
+    print(f"บอทเข้าเซิร์ฟ {guild.name} สำเร็จ")
 
 @bot.event
 async def on_member_join(member):
