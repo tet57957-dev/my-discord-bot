@@ -19,12 +19,17 @@ Thread(target=run_web, daemon=True).start()
 
 LOG_CHANNEL_NAME = "・°・Ban"
 OWNER_ID = 1395077285362794550
+# เปิดมาจะหยุดทำงานก่อน ให้หัวดิสจัดยศก่อน แล้วพิมพ์ !on ถึงจะเริ่มทำงาน
+PAUSED = True
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 spam_data = defaultdict(list)
 join_times = []
+
+def is_paused():
+    return PAUSED
 
 def is_exempt(guild, user):
     if user.id == guild.owner_id: return True
@@ -62,6 +67,7 @@ async def on_guild_join(guild):
 
 @bot.event
 async def on_member_join(member):
+    if PAUSED: return
     if member.bot and member.id != bot.user.id:
         try: await member.kick(reason="กันบอทแปลกปลอม")
         except: pass
@@ -76,6 +82,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_guild_update(before, after):
+    if PAUSED: return
     if before.name != after.name or before.icon != after.icon:
         async for entry in after.audit_logs(limit=1, action=discord.AuditLogAction.guild_update):
             culprit = entry.user
@@ -89,6 +96,7 @@ async def on_guild_update(before, after):
 
 @bot.event
 async def on_guild_role_create(role):
+    if PAUSED: return
     async for entry in role.guild.audit_logs(limit=1, action=discord.AuditLogAction.role_create):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(role.guild, culprit): return
@@ -100,6 +108,7 @@ async def on_guild_role_create(role):
 
 @bot.event
 async def on_guild_role_delete(role):
+    if PAUSED: return
     async for entry in role.guild.audit_logs(limit=1, action=discord.AuditLogAction.role_delete):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(role.guild, culprit): return
@@ -110,6 +119,7 @@ async def on_guild_role_delete(role):
 
 @bot.event
 async def on_member_update(before, after):
+    if PAUSED: return
     if len(before.roles) != len(after.roles):
         async for entry in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_role_update):
             culprit = entry.user
@@ -125,6 +135,7 @@ async def on_member_update(before, after):
 
 @bot.event
 async def on_guild_channel_create(channel):
+    if PAUSED: return
     async for entry in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_create):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(channel.guild, culprit): return
@@ -136,6 +147,7 @@ async def on_guild_channel_create(channel):
 
 @bot.event
 async def on_guild_channel_delete(channel):
+    if PAUSED: return
     async for entry in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_delete):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(channel.guild, culprit): return
@@ -147,6 +159,7 @@ async def on_guild_channel_delete(channel):
 
 @bot.event
 async def on_member_remove(member):
+    if PAUSED: return
     async for entry in member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(member.guild, culprit): return
@@ -157,6 +170,7 @@ async def on_member_remove(member):
 
 @bot.event
 async def on_member_ban(guild, user):
+    if PAUSED: return
     async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(guild, culprit): return
@@ -168,6 +182,7 @@ async def on_member_ban(guild, user):
 
 @bot.event
 async def on_webhooks_update(channel):
+    if PAUSED: return
     async for entry in channel.guild.audit_logs(limit=1, action=discord.AuditLogAction.webhook_create):
         culprit = entry.user
         if culprit.id != bot.user.id and not is_exempt(channel.guild, culprit):
@@ -179,6 +194,17 @@ async def on_webhooks_update(channel):
 @bot.event
 async def on_message(message):
     if message.author.bot: return
+    # ถ้าบอทหยุดทำงานอยู่ ให้หัวดิสพิมพ์ !on เพื่อเปิดเท่านั้น
+    if PAUSED:
+        if message.content.strip() == "!on" and (message.author.id == OWNER_ID or message.author.id == message.guild.owner_id):
+            global PAUSED
+            PAUSED = False
+            await message.channel.send("✅ เปิดบอทแล้ว ทำงานปกติ!")
+            return
+        # ถ้าหยุดอยู่ คำสั่งอื่นไม่ต้องทำอะไรเลย ยกเว้นให้บอทประมวลผล !on
+        if message.content.strip().startswith("!"):
+            await bot.process_commands(message)
+        return
     # ถ้าเป็นแอดมิน ให้ใช้คำสั่งได้เลย ไม่ต้องเช็คสแปม
     if message.author.guild_permissions.administrator:
         await bot.process_commands(message)
@@ -227,5 +253,26 @@ async def unlock(ctx):
     for ch in ctx.guild.text_channels:
         await ch.set_permissions(ctx.guild.default_role, send_messages=None)
     await ctx.send("✅ ปลดล็อคแล้ว")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def pause(ctx):
+    global PAUSED
+    PAUSED = True
+    await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว บอทจะไม่แบน/เตะใครเลย จัดยศได้สบายๆ พอจัดเสร็จพิมพ์ !on")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def on(ctx):
+    global PAUSED
+    PAUSED = False
+    await ctx.send("✅ เปิดบอทแล้ว เริ่มทำงานปกติ!")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def off(ctx):
+    global PAUSED
+    PAUSED = True
+    await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว")
 
 bot.run(TOKEN)
