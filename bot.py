@@ -25,7 +25,6 @@ join_times = []
 
 def is_exempt(guild, user):
     if user.id == guild.owner_id: return True
-    if user.guild_permissions.administrator: return True
     bot_mem = guild.get_member(bot.user.id)
     if bot_mem and user.top_role >= bot_mem.top_role: return True
     return False
