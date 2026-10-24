@@ -6,15 +6,17 @@ import time
 import os
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+
 from flask import Flask
 from threading import Thread
 app = Flask(__name__)
 @app.route("/")
-def home():
-    return "Bot is alive!"
+def home(): return "Bot is alive!"
 def run_web():
+    import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 Thread(target=run_web, daemon=True).start()
+
 LOG_CHANNEL_NAME = "・°・Ban"
 
 intents = discord.Intents.all()
@@ -30,17 +32,45 @@ def is_exempt(guild, user):
     return False
 
 async def send_log(guild, text):
+    # หาห้อง log แบบไม่ต้องตรงเป๊ะ ขอแค่ชื่อมีคำว่า ban
     for ch in guild.text_channels:
         if "ban" in ch.name.lower():
             try:
                 await ch.send(text)
+                print(f"SEND LOG -> #{ch.name}: {text}")
                 return
-            except:
-                pass
+            except Exception as e:
+                print(f"LOG FAIL {ch.name}: {e}")
+    # ถ้าหาไม่เจอ ให้ส่งไปห้องแรกที่ส่งได้
+    for ch in guild.text_channels:
+        try:
+            await ch.send(f"[LOG] {text}")
+            return
+        except: pass
 
 @bot.event
 async def on_ready():
     print(f"บอทออนไลน์แล้ว: {bot.user} - V5 โหดสุดครบจบ")
+
+@bot.event
+async def on_guild_join(guild):
+    # ย้ำแค่หัวดิสเท่านั้นที่ดึงบอทได้
+    try:
+        inviter = None
+        async for entry in guild.audit_logs(limit=5, action=discord.AuditLogAction.bot_add):
+            inviter = entry.user
+            break
+        if inviter is not None and inviter.id != guild.owner_id:
+            # ถ้าคนดึงไม่ใช่เจ้าของเซิร์ฟ ให้บอทออกเลย
+            try:
+                await guild.system_channel.send(f"❌ บอทนี้ดึงได้แค่เจ้าของเซิร์ฟเวอร์ ({guild.owner}) เท่านั้นครับ คนดึงคือ {inviter} ไม่ใช่เจ้าของ บอทออกแล้วนะ")
+            except: pass
+            print(f"บอทโดนดึงโดย {inviter} ไม่ใช่หัวดิส ({guild.owner}) ในเซิร์ฟ {guild.name} -> ออกเซิร์ฟ")
+            await guild.leave()
+            return
+        print(f"บอทเข้าเซิร์ฟ {guild.name} โดยหัวดิส {guild.owner} สำเร็จ")
+    except Exception as e:
+        print(f"on_guild_join error: {e}")
 
 @bot.event
 async def on_member_join(member):
@@ -160,7 +190,11 @@ async def on_webhooks_update(channel):
 
 @bot.event
 async def on_message(message):
-    if message.author.bot or message.author.guild_permissions.administrator: return
+    if message.author.bot: return
+    # ถ้าเป็นแอดมิน ให้ใช้คำสั่งได้เลย ไม่ต้องเช็คสแปม
+    if message.author.guild_permissions.administrator:
+        await bot.process_commands(message)
+        return
     if "@everyone" in message.content or "@here" in message.content:
         await message.delete()
         await send_log(message.guild, f"⚠️ {message.author} พยายามปิง @everyone")
