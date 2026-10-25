@@ -24,7 +24,7 @@ case_counter = 127  # เริ่ม 127 ต่อไป 128 เหมือน
 # วิธีหา ID เซิร์ฟ: ใน Discord คลิกขวาชื่อเซิร์ฟ > Copy Server ID
 ALLOWED_GUILD_IDS = []  # ตัวอย่าง: [123456789012345678] ใส่ ID เซิร์ฟพี่ตรงนี้ ถ้าว่างไว้จะอยู่ได้ทุกเซิร์ฟที่หัวดิสเป็นเจ้าของ
 # เปิดมาจะหยุดทำงานก่อน ให้หัวดิสจัดยศก่อน แล้วพิมพ์ !on ถึงจะเริ่มทำงาน
-PAUSED = True
+PAUSED = False  # แก้แล้ว: เปิดทำงานเลย ไม่หยุดแล้ว ถ้าจะจัดยศให้พิมพ์ !pause ก่อน
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -43,26 +43,26 @@ def is_exempt(guild, user):
     return False
 
 async def send_log(guild, text, target=None):
-    # ถ้ามี target ให้หาห้องนั้นก่อน เช่น banning-a-member, create-a-role
-    # ถ้าไม่เจอ ให้ส่งไปห้อง Ban ก่อน แล้วค่อยไป security-logs / modlogs
+    import re
+    def norm(s):
+        return re.sub(r"[^a-z0-9]", "", s.lower())
     txt_low = text.lower()
-    # แยกตามชนิด
     if target is None:
         if "has been banned" in txt_low or "แบน" in txt_low:
             target = "banning-a-member"
         elif "unban" in txt_low or "ปลดแบน" in txt_low:
             target = "unban-a-member"
-        elif "create" in txt_low and "role" in txt_low:
+        elif ("create" in txt_low and "role" in txt_low) or "สร้างยศ" in text:
             target = "create-a-role"
-        elif "delet" in txt_low and "role" in txt_low:
+        elif ("delet" in txt_low and "role" in txt_low) or "ลบยศ" in text:
             target = "deleting-a-role"
-        elif "add" in txt_low and "role" in txt_low:
+        elif ("add" in txt_low and "role" in txt_low) or "ใส่ยศ" in text:
             target = "add-member-role"
-        elif "remove" in txt_low and "role" in txt_low:
+        elif ("remove" in txt_low and "role" in txt_low) or "ถอดยศ" in text:
             target = "remove-member-role"
-        elif "create" in txt_low and "channel" in txt_low:
+        elif ("create" in txt_low and "channel" in txt_low) or "สร้างห้อง" in text:
             target = "create-a-channel"
-        elif "delet" in txt_low and "channel" in txt_low:
+        elif ("delet" in txt_low and "channel" in txt_low) or "ลบห้อง" in text:
             target = "delete-channel"
         elif "emoji" in txt_low and "create" in txt_low:
             target = "create-an-emoji"
@@ -74,31 +74,36 @@ async def send_log(guild, text, target=None):
             target = "save-invitation"
         elif "voice" in txt_low or "ห้องพูดคุย" in txt_low:
             target = "room-entryexit-log"
-    # 1. ลองห้องตรงตัวก่อน
+    # 1. ลองห้องตรงตัวแบบ normalized ก่อน - แก้ปัญหาหาชื่อห้องไม่เจอ
     if target:
+        target_norm = norm(target)
+        for ch in guild.text_channels:
+            if target_norm in norm(ch.name) or norm(ch.name) in target_norm:
+                try:
+                    await ch.send(text); return True
+                except: pass
+        # ลองแบบเดิม substring
         for ch in guild.text_channels:
             if target in ch.name.lower():
                 try:
-                    await ch.send(text); return
+                    await ch.send(text); return True
                 except: pass
-    # 2. ถ้าไม่เจอห้องตรง ให้ส่งไปห้องที่มีคำว่า ban
+    # 2. ถ้าไม่เจอห้องตรง ให้ส่งไปห้องแบนเป็น fallback เท่านั้น
     for ch in guild.text_channels:
         if "ban" in ch.name.lower():
             try:
-                await ch.send(text); return
+                await ch.send(text); return True
             except: pass
-    # 3. security-logs / modlogs
     for ch in guild.text_channels:
         if "security" in ch.name.lower() or "modlog" in ch.name.lower():
             try:
-                await ch.send(text); return
+                await ch.send(text); return True
             except: pass
-    # ถ้าหาไม่เจอ ให้ส่งไปห้องแรกที่ส่งได้
     for ch in guild.text_channels:
         try:
-            await ch.send(f"[LOG] {text}")
-            return
+            await ch.send(f"[LOG] {text}"); return True
         except: pass
+    return False
 
 @bot.event
 async def on_ready():
@@ -319,7 +324,7 @@ async def unlock(ctx):
 @commands.has_permissions(administrator=True)
 async def pause(ctx):
     global PAUSED
-    PAUSED = True
+    PAUSED = False  # แก้แล้ว: เปิดทำงานเลย ไม่หยุดแล้ว ถ้าจะจัดยศให้พิมพ์ !pause ก่อน
     await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว บอทจะไม่แบน/เตะใครเลย จัดยศได้สบายๆ พอจัดเสร็จพิมพ์ !on")
 
 @bot.command()
@@ -333,7 +338,7 @@ async def on(ctx):
 @commands.has_permissions(administrator=True)
 async def off(ctx):
     global PAUSED
-    PAUSED = True
+    PAUSED = False  # แก้แล้ว: เปิดทำงานเลย ไม่หยุดแล้ว ถ้าจะจัดยศให้พิมพ์ !pause ก่อน
     await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว")
 
 
@@ -451,6 +456,7 @@ async def on_guild_update_ultimate(before, after):
                     await after.ban(culprit, reason="เปลี่ยน Banner/Icon เซิร์ฟมั่ว")
                     await send_log(after, f"✅ Case #{case_counter+1} {culprit.mention} has been banned. เหตุผล: เปลี่ยน Banner/Icon เซิร์ฟมั่ว")
         except: pass
+
 
 
 bot.run(TOKEN)
