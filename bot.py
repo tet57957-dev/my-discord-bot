@@ -100,6 +100,11 @@ async def send_log(guild, text, target=None):
                 await ch.send(text); return True
             except: pass
     for ch in guild.text_channels:
+        if 'setup' in ch.name.lower():
+            try:
+                await ch.send(text); return True
+            except: pass
+    for ch in guild.text_channels:
         try:
             await ch.send(f"[LOG] {text}"); return True
         except: pass
@@ -431,7 +436,7 @@ async def ultimate_check(message):
 
 # ================= 6 + 9 ที่พี่ขอเพิ่ม =================
 # 6. กันคนเชิญบอทอื่นเข้ามา (Anti Bot Abuse)
-@bot.event
+@bot.listen('on_member_join')
 async def on_member_join_ultimate_bot(member):
     if PAUSED: return
     if member.bot and member.id != bot.user.id:
@@ -442,7 +447,7 @@ async def on_member_join_ultimate_bot(member):
         except: pass
 
 # 9. กันเปลี่ยน Banner / Icon เซิร์ฟรัวๆ
-@bot.event
+@bot.listen('on_guild_update')
 async def on_guild_update_ultimate(before, after):
     if PAUSED: return
     # ถ้าเปลี่ยน Banner หรือ Icon ให้คืนค่าเดิม + แบนคนทำ
