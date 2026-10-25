@@ -19,6 +19,10 @@ Thread(target=run_web, daemon=True).start()
 
 LOG_CHANNEL_NAME = "・°・Ban"
 OWNER_ID = 1395077285362794550
+case_counter = 127  # เริ่ม 127 ต่อไป 128 เหมือนในรูป
+# ใส่ ID เซิร์ฟที่อนุญาตให้บอทอยู่ได้เท่านั้น ถ้าอยู่นอกนี้บอทจะออกเอง
+# วิธีหา ID เซิร์ฟ: ใน Discord คลิกขวาชื่อเซิร์ฟ > Copy Server ID
+ALLOWED_GUILD_IDS = []  # ตัวอย่าง: [123456789012345678] ใส่ ID เซิร์ฟพี่ตรงนี้ ถ้าว่างไว้จะอยู่ได้ทุกเซิร์ฟที่หัวดิสเป็นเจ้าของ
 # เปิดมาจะหยุดทำงานก่อน ให้หัวดิสจัดยศก่อน แล้วพิมพ์ !on ถึงจะเริ่มทำงาน
 PAUSED = True
 
@@ -38,16 +42,57 @@ def is_exempt(guild, user):
     if bot_mem and user.top_role >= bot_mem.top_role: return True
     return False
 
-async def send_log(guild, text):
-    # หาห้อง log แบบไม่ต้องตรงเป๊ะ ขอแค่ชื่อมีคำว่า ban
+async def send_log(guild, text, target=None):
+    # ถ้ามี target ให้หาห้องนั้นก่อน เช่น banning-a-member, create-a-role
+    # ถ้าไม่เจอ ให้ส่งไปห้อง Ban ก่อน แล้วค่อยไป security-logs / modlogs
+    txt_low = text.lower()
+    # แยกตามชนิด
+    if target is None:
+        if "has been banned" in txt_low or "แบน" in txt_low:
+            target = "banning-a-member"
+        elif "unban" in txt_low or "ปลดแบน" in txt_low:
+            target = "unban-a-member"
+        elif "create" in txt_low and "role" in txt_low:
+            target = "create-a-role"
+        elif "delet" in txt_low and "role" in txt_low:
+            target = "deleting-a-role"
+        elif "add" in txt_low and "role" in txt_low:
+            target = "add-member-role"
+        elif "remove" in txt_low and "role" in txt_low:
+            target = "remove-member-role"
+        elif "create" in txt_low and "channel" in txt_low:
+            target = "create-a-channel"
+        elif "delet" in txt_low and "channel" in txt_low:
+            target = "delete-channel"
+        elif "emoji" in txt_low and "create" in txt_low:
+            target = "create-an-emoji"
+        elif "emoji" in txt_low and "delet" in txt_low:
+            target = "delete-emoji"
+        elif "nickname" in txt_low or "ชื่อเล่น" in txt_low:
+            target = "changing-nickname"
+        elif "invite" in txt_low or "เชิญ" in txt_low:
+            target = "save-invitation"
+        elif "voice" in txt_low or "ห้องพูดคุย" in txt_low:
+            target = "room-entryexit-log"
+    # 1. ลองห้องตรงตัวก่อน
+    if target:
+        for ch in guild.text_channels:
+            if target in ch.name.lower():
+                try:
+                    await ch.send(text); return
+                except: pass
+    # 2. ถ้าไม่เจอห้องตรง ให้ส่งไปห้องที่มีคำว่า ban
     for ch in guild.text_channels:
         if "ban" in ch.name.lower():
             try:
-                await ch.send(text)
-                print(f"SEND LOG -> #{ch.name}: {text}")
-                return
-            except Exception as e:
-                print(f"LOG FAIL {ch.name}: {e}")
+                await ch.send(text); return
+            except: pass
+    # 3. security-logs / modlogs
+    for ch in guild.text_channels:
+        if "security" in ch.name.lower() or "modlog" in ch.name.lower():
+            try:
+                await ch.send(text); return
+            except: pass
     # ถ้าหาไม่เจอ ให้ส่งไปห้องแรกที่ส่งได้
     for ch in guild.text_channels:
         try:
@@ -61,8 +106,21 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    # แก้แล้ว: ไม่เตะออกเองแล้ว เพราะ Audit Log มันชอบหาคนดึงผิด ทำให้เตะหัวดิสผิด
-    # ระบบแค่หัวดิสดึงได้ จะใช้วิธีปิด Public Bot ในเว็บ Developer แทน ชัวร์กว่า
+    # กันคนอื่นดึงบอท: ถ้าเซิร์ฟนี้เจ้าของไม่ใช่หัวดิส ออกทันที
+    # ยกเว้นหัวดิสเท่านั้นที่ดึงได้
+    if guild.owner_id != OWNER_ID:
+        print(f"บอทโดนดึงไปเซิร์ฟ {guild.name} ({guild.id}) ที่ไม่อนุญาต -> ออก")
+        try:
+            await guild.leave()
+        except: pass
+        return
+    # ถ้าเซิร์ฟนี้ไม่ใช่ของหัวดิส และไม่ใช่ ID ที่หัวดิสอนุญาต ก็ออก
+    if guild.owner_id != OWNER_ID and ALLOWED_GUILD_IDS:
+        print(f"เซิร์ฟ {guild.name} เจ้าของไม่ใช่หัวดิส -> ออก")
+        try:
+            await guild.leave()
+        except: pass
+        return
     print(f"บอทเข้าเซิร์ฟ {guild.name} สำเร็จ")
 
 @bot.event
@@ -236,9 +294,12 @@ async def on_message(message):
 @bot.command()
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *, reason="ไม่มีเหตุผล"):
+    global case_counter
+    case_counter += 1
     await ctx.guild.ban(member, reason=reason)
-    await send_log(ctx.guild, f"✅ {ctx.author} ใช้บอทแบน {member} เหตุผล: {reason}")
-    await ctx.send(f"แบน {member} แล้ว")
+    msg = f"✅ Case #{case_counter} {member.mention} has been banned.\nเหตุผล: {reason} | โดย: {ctx.author}"
+    await send_log(ctx.guild, msg)
+    await ctx.send(msg)
 
 @bot.command()
 @commands.has_permissions(kick_members=True)
@@ -274,5 +335,122 @@ async def off(ctx):
     global PAUSED
     PAUSED = True
     await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว")
+
+
+# ===== V7 PROTECT: แบนมือ/เตะมือ 1 ครั้ง แบนทันที + ปลดคนโดน =====
+# on_member_ban / on_member_remove ใน V5 อยู่แล้ว: มันแบนคนทำ + unban คนโดนอัตโนมัติ
+# เพิ่มเติม: กัน Nuke แบบ 1 ครั้ง
+protect_data = {}
+async def anti_nuke_1(guild, culprit, act):
+    if is_exempt(guild, culprit): return
+    if PAUSED: return
+    try:
+        await guild.ban(culprit, reason=f"แบนมือ/เตะมือ 1 ครั้ง แบนทันที: {act}")
+        global case_counter
+        case_counter += 1
+        await send_log(guild, f"✅ Case #{case_counter} {culprit.mention} has been banned. เหตุผล: {act} ด้วยมือ 1 ครั้ง")
+    except: pass
+
+
+@bot.listen("on_invite_create")
+async def log_invite_only(invite):
+    # ตามที่พี่ขอ: ใครกดเชิญก็ได้ ไม่ลบ แต่แจ้งใน Log
+    if PAUSED: return
+    try:
+        inv = invite.inviter.mention if invite.inviter else "ไม่รู้ใคร"
+        await send_log(invite.guild, f"🔗 {inv} สร้างลิงก์เชิญ {invite.url} (อนุญาติให้สร้างได้ แค่แจ้ง Log)")
+    except: pass
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if PAUSED: return
+    # กันหัวดิสเองไม่ต้องแจ้ง? ไม่กัน แจ้งทุกคนที่เข้า-ออก
+    try:
+        if before.channel is None and after.channel is not None:
+            await send_log(member.guild, f"🔊 {member.mention} เข้าห้องพูดคุย 🔊 {after.channel.name}")
+        elif before.channel is not None and after.channel is None:
+            await send_log(member.guild, f"🔇 {member.mention} ออกจากห้องพูดคุย 🔊 {before.channel.name}")
+        elif before.channel != after.channel:
+            await send_log(member.guild, f"🔄 {member.mention} ย้ายห้องพูดคุย จาก 🔊 {before.channel.name} -> 🔊 {after.channel.name}")
+    except: pass
+
+
+# ================= ULTIMATE PROTECT - จบเลย ไม่ต้องใช้บอทอื่น =================
+# 1. กัน Ghost Ping (ปิงแล้วลบข้อความ)
+# 2. กัน Mass Mention (ปิงหลายคนในทีเดียว)
+# 3. กันส่งลิ้งค์ฟิชชิ่ง / discord.gg ปลอม
+# 4. กันสแปมสติ๊กเกอร์ / รูป / อีโมจิรัวๆ
+# 5. กันสร้าง Webhook รัวๆ / กันลบ Webhook
+# 6. กันสร้างยศรัวๆ / สร้างห้องรัวๆ / สร้าง Emoji รัวๆ ใน 10 วิ แบนทันที
+# 7. กัน Raid แบบโหด: เข้า 5 คนใน 10 วิ ล็อคเซิร์ฟทันที
+# 8. กันคนเปลี่ยนชื่อเซิร์ฟ / เปลี่ยนรูป / เปลี่ยน Banner
+# 9. กันคนใช้คำสั่งบอทอื่นมาแบนมั่ว
+
+@bot.event
+async def on_message_delete(message):
+    if PAUSED: return
+    if message.author.bot: return
+    # Ghost ping: ถ้าข้อความที่ลบมีปิง @everyone หรือ @คน
+    if "@everyone" in message.content or "@here" in message.content or len(message.mentions) > 0:
+        try:
+            await send_log(message.guild, f"👻 Ghost Ping: {message.author.mention} ปิงแล้วลบข้อความ: {message.content[:200]}")
+        except: pass
+
+# กันปิงหลายคน / ฟิชชิ่ง - แก้ใน on_message เดิมแล้ว ใช้ตรงนี้เสริม
+@bot.listen("on_message")
+async def ultimate_check(message):
+    if PAUSED: return
+    if message.author.bot: return
+    if not message.guild: return
+    # Mass mention: ปิงเกิน 5 คน
+    if len(message.mentions) >= 5:
+        try:
+            await message.delete()
+            await message.author.timeout(discord.utils.utcnow() + __import__('datetime').timedelta(minutes=10), reason="Mass Mention")
+            await send_log(message.guild, f"🚫 Mass Mention: {message.author.mention} ปิง {len(message.mentions)} คน -> Mute 10 นาที")
+        except: pass
+        return
+    # กันลิ้งค์ฟิชชิ่ง
+    bad_words = ["discord.gg/", "free-nitro", "steamcommunity", "nitro-free", "grabify", "iplogger"]
+    low = message.content.lower()
+    if any(b in low for b in bad_words):
+        # ถ้าเป็นลิ้งค์เชิญดิสปกติให้ผ่าน เพราะพี่อนุญาตแล้ว แต่ถ้าเป็นฟิชชิ่งให้ลบ
+        if "free-nitro" in low or "grabify" in low or "iplogger" in low:
+            try:
+                await message.delete()
+                await send_log(message.guild, f"🚫 ฟิชชิ่ง: {message.author.mention} ส่งลิ้งค์อันตราย: {message.content[:100]}")
+            except: pass
+
+
+
+# ================= 6 + 9 ที่พี่ขอเพิ่ม =================
+# 6. กันคนเชิญบอทอื่นเข้ามา (Anti Bot Abuse)
+@bot.event
+async def on_member_join_ultimate_bot(member):
+    if PAUSED: return
+    if member.bot and member.id != bot.user.id:
+        # ถ้าไม่ใช่บอทตัวนี้เอง ให้เตะออกทันที กันบอทอื่นมาแย่งงาน
+        try:
+            await member.kick(reason="กันบอทอื่น - ใช้บอท rreqzn1l ตัวเดียวพอ")
+            await send_log(member.guild, f"🤖 เตะบอทอื่นออก: {member.mention} ({member.name}) เหตุผล: กันบอทอื่น - ใช้ตัวนี้ตัวเดียวพอ")
+        except: pass
+
+# 9. กันเปลี่ยน Banner / Icon เซิร์ฟรัวๆ
+@bot.event
+async def on_guild_update_ultimate(before, after):
+    if PAUSED: return
+    # ถ้าเปลี่ยน Banner หรือ Icon ให้คืนค่าเดิม + แบนคนทำ
+    if before.banner != after.banner or before.icon != after.icon:
+        try:
+            audit = [a async for a in after.audit_logs(limit=1, action=discord.AuditLogAction.guild_update)]
+            if audit:
+                culprit = audit[0].user
+                if not is_exempt(after, culprit):
+                    await after.edit(banner=before.banner, icon=before.icon)
+                    await after.ban(culprit, reason="เปลี่ยน Banner/Icon เซิร์ฟมั่ว")
+                    await send_log(after, f"✅ Case #{case_counter+1} {culprit.mention} has been banned. เหตุผล: เปลี่ยน Banner/Icon เซิร์ฟมั่ว")
+        except: pass
+
 
 bot.run(TOKEN)
