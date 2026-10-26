@@ -11,6 +11,7 @@ from flask import Flask
 from threading import Thread
 app = Flask(__name__)
 @app.route("/")
+@app.route("/health")
 def home(): return "Bot is alive!"
 def run_web():
     import os
