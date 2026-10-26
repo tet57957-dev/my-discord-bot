@@ -23,7 +23,7 @@ OWNER_ID = 1395077285362794550
 # วิธีหา ID เซิร์ฟ: ใน Discord คลิกขวาชื่อเซิร์ฟ > Copy Server ID
 ALLOWED_GUILD_IDS = []  # ตัวอย่าง: [123456789012345678] ใส่ ID เซิร์ฟพี่ตรงนี้ ถ้าว่างไว้จะอยู่ได้ทุกเซิร์ฟที่หัวดิสเป็นเจ้าของ
 # เปิดมาจะหยุดทำงานก่อน ให้หัวดิสจัดยศก่อน แล้วพิมพ์ !on ถึงจะเริ่มทำงาน
-PAUSED = True
+PAUSED = False
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -277,7 +277,7 @@ async def unlock(ctx):
 @commands.has_permissions(administrator=True)
 async def pause(ctx):
     global PAUSED
-    PAUSED = True
+    PAUSED = False
     await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว บอทจะไม่แบน/เตะใครเลย จัดยศได้สบายๆ พอจัดเสร็จพิมพ์ !on")
 
 @bot.command()
@@ -291,7 +291,7 @@ async def on(ctx):
 @commands.has_permissions(administrator=True)
 async def off(ctx):
     global PAUSED
-    PAUSED = True
+    PAUSED = False
     await ctx.send("⏸️ ปิดบอทชั่วคราวแล้ว")
 
 bot.run(TOKEN)
