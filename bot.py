@@ -12,7 +12,9 @@ from threading import Thread
 app = Flask(__name__)
 @app.route("/")
 @app.route("/health")
-def home(): return "Bot is alive!"
+def home(): return "Bot is alive!", 200
+@app.route("/<path:path>")
+def catch_all(path): return "Bot is alive!", 200
 def run_web():
     import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
