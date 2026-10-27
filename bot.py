@@ -203,9 +203,39 @@ async def on_webhooks_update(channel):
 @bot.event
 async def on_message(message):
     if message.author.bot: return
-    if PAUSED: return
-    if message.author.guild_permissions.administrator and is_exempt(message.guild, message.author):
+    if message.content.strip() in ["!on", "!off", "!pause"]:
+        ctx2 = await bot.get_context(message)
+        if message.content.strip() == "!on":
+            await bot_on(ctx2)
+        else:
+            await bot_off(ctx2)
         return
+    # !protect แบบ manual - ทำงานชัวร์ไม่ต้องผ่าน command system
+    if message.content.strip() in ["!protect", "!protection"]:
+        # เจ้าของเซิร์ฟใช้ได้เสมอ
+        is_owner = message.author.id == OWNER_ID or (message.guild and message.author.id == message.guild.owner_id)
+        if is_owner:
+            ctx = await bot.get_context(message)
+            await protect_cmd(ctx)
+            return
+        # แอดมินที่ยศสูงกว่าบอท
+        try:
+            bot_top = message.guild.me.top_role
+            has_higher = any(r.position > bot_top.position for r in message.author.roles)
+            is_admin = message.author.guild_permissions.administrator
+            if is_admin and (has_higher or message.author.top_role == bot_top):
+                ctx = await bot.get_context(message)
+                await protect_cmd(ctx)
+                return
+            else:
+                await message.channel.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ | ยศต่ำกว่าบอท เปิดผู้ดูแลก็ใช้ไม่ได้")
+                return
+        except Exception as e:
+            await message.channel.send(f"❌ ใช้คำสั่งไม่ได้: {e}")
+            return
+    # ให้คำสั่งทำงานก่อนเสมอ - ไม่งั้น !protect ใช้ไม่ได้
+    await bot.process_commands(message)
+    if PAUSED: return
     if is_exempt(message.guild, message.author):
         return
     # 1. คำด่า พิมพ์ได้ ไม่ลบ
@@ -355,11 +385,15 @@ async def protect_cmd(ctx):
     """ดูระบบป้องกันทั้งหมด - คำสั่งเดียวของตัวที่ 1"""
     # ใช้ได้เฉพาะแอดมิน + ยศสูงกว่าบอทเท่านั้น
     # ยศต่ำกว่าบอท ต่อให้เปิดผู้ดูแล (Administrator) ก็ใช้ไม่ได้
-    is_admin_high = (ctx.author.guild_permissions.administrator and ctx.author.top_role > ctx.guild.me.top_role)
-    is_owner = ctx.author.id == OWNER_ID or ctx.author.id == ctx.guild.owner_id
-    if not (is_admin_high or is_owner):
-        await ctx.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ | ยศต่ำกว่าบอท เปิดผู้ดูแลก็ใช้ไม่ได้")
-        return
+    # ตรวจสิทธิ์อีกครั้ง (กรณีเรียกจาก !protect แบบ command)
+    is_owner2 = ctx.author.id == OWNER_ID or ctx.author.id == ctx.guild.owner_id
+    if not is_owner2:
+        bot_top2 = ctx.guild.me.top_role
+        has_higher2 = any(r.position > bot_top2.position for r in ctx.author.roles)
+        is_admin2 = ctx.author.guild_permissions.administrator
+        if not ((is_admin2 and has_higher2) or (is_admin2 and ctx.author.top_role == bot_top2)):
+            await ctx.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ | ยศต่ำกว่าบอท เปิดผู้ดูแลก็ใช้ไม่ได้")
+            return
     embed = discord.Embed(title="🛡️ rreqzn1l - ระบบป้องกันทั้งหมด", color=0x1e1f22)
     embed.description = "ดูระบบป้องกันดิส พิมพ์ !protect | ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้น | ทั้งหมด 18 ระบบ"
     embed.add_field(name="🔒 กันเซิร์ฟ / กัน Raid", value="กันเซิร์ฟโดนดึง - โดนดึงไปเซิร์ฟอื่น บอทออกเอง\nกัน Raid - เข้า 10 คน/60 วิ = ล็อคเซิร์ฟ\nกันบอทแปลกปลอม - เข้ามาเตะทิ้ง\nกันเปลี่ยนชื่อ/รูปเซิร์ฟมั่ว - เปลี่ยนกลับ + แบน", inline=False)
@@ -374,5 +408,38 @@ async def protect_cmd(ctx):
 @bot.command(name="protection")
 async def protection_alias(ctx):
     await protect_cmd(ctx)
+
+
+# ระบบเปิด/ปิดบอท - ใช้ได้เฉพาะเจ้าของ + แอดมินยศสูงกว่าบอทเท่านั้น
+async def _is_admin_owner(ctx):
+    if ctx.author.id == OWNER_ID or ctx.author.id == ctx.guild.owner_id:
+        return True
+    bot_top = ctx.guild.me.top_role
+    has_higher = any(r.position > bot_top.position for r in ctx.author.roles)
+    return ctx.author.guild_permissions.administrator and (has_higher or ctx.author.top_role == bot_top)
+
+@bot.command(name="on")
+async def bot_on(ctx):
+    if not await _is_admin_owner(ctx):
+        await ctx.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ")
+        return
+    global PAUSED
+    PAUSED = False
+    await ctx.send("✅ เปิดบอทแล้ว เริ่มทำงานปกติ!")
+
+@bot.command(name="off")
+async def bot_off(ctx):
+    if not await _is_admin_owner(ctx):
+        await ctx.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ")
+        return
+    global PAUSED
+    PAUSED = True
+    await ctx.send("⏸️ ปิดบอทแล้ว ระบบป้องกันหยุดทำงานชั่วคราว (พิมพ์ !on เพื่อเปิด)")
+
+@bot.command(name="pause")
+async def bot_pause(ctx):
+    await bot_off(ctx)
+
+# ให้ !on/!off ทำงานผ่าน on_message manual ด้วย (กันกรณี command ไม่ทำงาน)
 
 bot.run(TOKEN)
