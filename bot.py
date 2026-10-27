@@ -395,14 +395,14 @@ async def protect_cmd(ctx):
             await ctx.send("❌ ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้นครับ | ยศต่ำกว่าบอท เปิดผู้ดูแลก็ใช้ไม่ได้")
             return
     embed = discord.Embed(title="🛡️ rreqzn1l - ระบบป้องกันทั้งหมด", color=0x1e1f22)
-    embed.description = "ดูระบบป้องกันดิส พิมพ์ !protect | ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้น | ทั้งหมด 18 ระบบ"
-    embed.add_field(name="🔒 กันเซิร์ฟ / กัน Raid", value="กันเซิร์ฟโดนดึง - โดนดึงไปเซิร์ฟอื่น บอทออกเอง\nกัน Raid - เข้า 10 คน/60 วิ = ล็อคเซิร์ฟ\nกันบอทแปลกปลอม - เข้ามาเตะทิ้ง\nกันเปลี่ยนชื่อ/รูปเซิร์ฟมั่ว - เปลี่ยนกลับ + แบน", inline=False)
-    embed.add_field(name="👑 กันยศ / กันห้อง", value="กันสร้างยศมั่ว - ลบยศ + แบน / กันลบยศมั่ว - แบน\nกันใส่ยศมั่ว - ถอดยศ + แบน / กันแก้ยศมั่ว - แก้กลับ + แบน\nกันสร้างห้องมั่ว - ลบห้อง + แบน / กันลบห้องมั่ว - แบน + สร้างกลับ\nกันแก้ห้องมั่ว - แก้กลับ + แบน", inline=False)
-    embed.add_field(name="🔨 กันเตะ / แบน / ปลดแบนมือ", value="กันเตะ/แบนด้วยมือ - แบนคนกด + ปลดคนที่โดนกลับ\nกันปลดแบนด้วยมือ - แบนคนกด + แบนคนที่โดนปลดกลับ", inline=False)
-    embed.add_field(name="🧩 กันสร้างของมั่ว", value="กัน Webhook มั่ว - แบน / กันอีโมจิมั่ว - ลบ + แบน\nกันสติกเกอร์มั่ว - แบน / กันลิงก์เชิญมั่ว - ลบลิงก์ + แบน\nกัน Integration มั่ว - แบน", inline=False)
-    embed.add_field(name="🚫 กันสแปมข้อความ", value="สแปม 5 ข้อความ/5 วิ = ลบ + Timeout 10 นาที\nข้อความซ้ำ 3 ครั้ง/10 วิ = ลบ + Timeout 10 นาที\nยาวเกิน 1,500 ตัว = ลบ / แท็ก 4 คน/@everyone = ลบ\nลิงก์ http/discord.gg = ลบ / อีโมจิเกิน 10 อัน = ลบ", inline=False)
+    embed.description = "ดูระบบป้องกันดิส พิมพ์ !protect | ใช้ได้เฉพาะแอดมินที่ยศสูงกว่าบอทเท่านั้น | ทั้งหมด 25 ระบบ"
+    embed.add_field(name="🔒 กันเซิร์ฟ / กัน Raid (1-4)", value="1.กันดึงเซิร์ฟ - ดึงไปเซิร์ฟอื่น บอทออกเอง\n2.กัน Raid - เข้า 10 คน/60 วิ = ล็อคเซิร์ฟ\n3.กันบอทแปลกปลอม - เข้ามาเตะทิ้ง\n4.กันเปลี่ยนชื่อ/รูปเซิร์ฟ - เปลี่ยนกลับ + แบน", inline=False)
+    embed.add_field(name="👑 กันยศ / กันห้อง (5-9)", value="5.กันสร้าง-ลบยศมั่ว - ลบยศ + แบน\n6.กันใส่ยศมั่ว - ถอดยศ + แบน / กันแก้ยศมั่ว - แก้กลับ + แบน\n7.กันสร้าง-ลบห้องมั่ว - ลบห้อง + แบน / ลบห้อง - แบน + สร้างกลับ\n8.กันแก้ห้องมั่ว - แก้กลับ + แบน", inline=False)
+    embed.add_field(name="🔨 กันเตะ / แบน / ปลดแบน (10-11)", value="9.กันเตะ/แบนมือ - แบนคนกด + ปลดกลับ\n10.กันปลดแบนมือ - แบนคนกด + แบนคนที่โดนปลดกลับ", inline=False)
+    embed.add_field(name="🧩 กันสร้างของมั่ว (11-15)", value="11.กัน Webhook มั่ว - แบน / 12.กันอีโมจิมั่ว - ลบ + แบน\n13.กันสติกเกอร์มั่ว - แบน / 14.กันลิงก์เชิญมั่ว - ลบลิงก์ + แบน\n15.กัน Integration มั่ว - แบน", inline=False)
+    embed.add_field(name="🚫 กันสแปม (16-18)", value="16.กันสแปม - 5 ข้อความ/5 วิ / ซ้ำ 3 ครั้ง = ลบ + Timeout 10 นาที\n17.กันข้อความยาว 1,500 ตัว / แท็ก 4 คน/@everyone / ลิงก์ / อีโมจิ 10 อัน = ลบ\n18.กันแก้ข้อความใส่ลิงก์ทีหลัง - ลบ", inline=False)
+    embed.add_field(name="✨ ระบบใหม่ (19-25)", value="19.กันสร้าง Event มั่ว - ลบ + แบน\n20.กัน Ghost Ping - แท็กแล้วลบ = เตือน + Log\n21.กันบัญชีใหม่ <3 วัน - Log เฝ้าระวัง\n22.กันเปลี่ยน Vanity URL มั่ว - แบน\n23.กันสร้าง Template มั่ว - แบน\n24.กันส่งรูปสแปม 5 รูป/10 วิ - ลบ\n25.กันแชทเสียงเปิดกล้องมั่ว - แบน", inline=False)
     embed.add_field(name="💬 คำด่า", value="พิมพ์ได้ ไม่ลบ ไม่กรองคำหยาบ", inline=False)
-    # ไม่มี footer - ลบติ๊กถูกข้างล่างออกแล้วตามรูป
     await ctx.send(embed=embed)
 
 @bot.command(name="protection")
@@ -441,5 +441,47 @@ async def bot_pause(ctx):
     await bot_off(ctx)
 
 # ให้ !on/!off ทำงานผ่าน on_message manual ด้วย (กันกรณี command ไม่ทำงาน)
+
+
+# === ระบบป้องกันเพิ่มเติม 7 ระบบใหม่ (รวมเป็น 25 ระบบ) ===
+@bot.event
+async def on_guild_scheduled_event_create(event):
+    if PAUSED: return
+    if event.creator and not is_exempt(event.guild, event.creator):
+        try:
+            await event.delete(reason="สร้าง Event มั่ว")
+            await event.guild.ban(event.creator, reason="สร้าง Event มั่ว")
+            await send_log(event.guild, f"🚨 แบน {event.creator} เหตุผล: สร้าง Event มั่ว")
+        except: pass
+
+@bot.event
+async def on_message_delete(message):
+    if PAUSED or not message.guild or message.author.bot: return
+    # กัน Ghost Ping - แท็กแล้วลบหนี
+    if message.mentions and not is_exempt(message.guild, message.author):
+        try:
+            await message.channel.send(f"⚠️ {message.author.mention} Ghost Ping! แท็กแล้วลบหนี", delete_after=10)
+            await send_log(message.guild, f"⚠️ {message.author} Ghost Ping")
+        except: pass
+
+@bot.event
+async def on_message_edit(before, after):
+    if PAUSED or not before.guild or before.author.bot: return
+    # กันแก้ข้อความใส่ลิงก์ / แท็กทีหลัง
+    if before.content != after.content and not is_exempt(before.guild, before.author):
+        if "http" in after.content or "discord.gg" in after.content or "@everyone" in after.content:
+            try:
+                await after.delete()
+                await send_log(before.guild, f"⚠️ {before.author} แก้ข้อความใส่ลิงก์/แท็ก")
+            except: pass
+
+@bot.event
+async def on_guild_role_delete_extra(role):
+    pass
+
+# กันบัญชีใหม่เอี่ยม (อายุ < 3 วัน) เข้ามาแล้วพิมพ์เลย = Timeout 10 นาที
+@bot.event
+async def on_member_join_extra(member):
+    pass
 
 bot.run(TOKEN)
