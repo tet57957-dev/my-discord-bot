@@ -150,7 +150,7 @@ async def on_guild_role_create(role):
         culprit = entry.user
         if culprit.id == bot.user.id or is_exempt(role.guild, culprit): return
         if is_decorative_role(role):
-            await send_log(role.guild, f"✅ {culprit} สร้างยศตกแต่ง {role.name} (อนุญาต)")
+            await send_log(role.guild, f"✅ {culprit} สร้างยศตกแต่ง {role.name}")
             return
         if check_nuke(role.guild.id, culprit.id, "role_create"):
             try:
@@ -446,11 +446,11 @@ async def on_message(message):
 
 @bot.event
 async def on_member_unban(guild, user):
-    # เอาออกตามคำขอพี่: ใครมียศปลดแบน ปลดแบนได้เลย ไม่โดนแบน
+    # ปลดแบนได้เลย ไม่โดนแบน
     # ระบบป้องกันอื่นยังอยู่ครบ 100%
     if PAUSED: return
     try:
-        await send_log(guild, f"✅ {user} โดนปลดแบนแล้ว (อนุญาต - ตามคำขอเจ้าของ)")
+        await send_log(guild, f"✅ {user} โดนปลดแบนแล้ว (อนุญาต - )")
     except: pass
     return
 
@@ -468,7 +468,7 @@ async def protect_cmd(ctx):
     embed.description = "ตัวเดียวครบจบ | กันยิงดิสทุกช่องทาง | พิมพ์ !protect | ใช้ได้เฉพาะแอดมินยศสูงกว่าบอท | ทั้งหมด 30+ ระบบ ULTIMATE"
     embed.add_field(name="💥 กันยิงดิส / กัน Raid ULTIMATE (1-6)", value="1.กันดึงเซิร์ฟ - ดึงไปเซิร์ฟอื่น บอทออกเอง\n2.กัน Raid - เข้า 10 คน/60วิ = ล็อคเซิร์ฟทันที\n3.กันบอทแปลกปลอม - เข้ามาเตะทิ้ง + Log\n4.กันเปลี่ยนชื่อ/รูปเซิร์ฟ - เปลี่ยนกลับ + แบน\n5.กันยิงดิส - ทำเกิน 3 ครั้ง/10วิ = แบน + กู้คืน\n6.กันบัญชีใหม่ <3 วัน - Log เฝ้าระวัง", inline=False)
     embed.add_field(name="👑 กันยศ / กันห้อง ULTIMATE (7-12)", value="7.กันสร้าง-ลบยศมั่ว - ลบยศ + แบน + กู้คืน\n8.กันใส่ยศมั่ว - ถอดยศ + แบน (ยกเว้นยศตกแต่งใส่ได้)\n9.กันแก้ยศมั่ว - แก้กลับ + แบน\n10.กันสร้าง-ลบห้องมั่ว - ลบห้อง + แบน + สร้างกลับ\n11.กันแก้ห้องมั่ว - แก้กลับ + แบน\n12.กันยศต่ำกว่าบอท - ใช้ทุกการอนุญาต โดนแบนหมด", inline=False)
-    embed.add_field(name="🔨 กันเตะ/แบน/ปลดแบน ULTIMATE (13-15)", value="13.กันเตะมือ - แบนคนกด\n14.กันแบนมือ - แบนคนกด + ปลดกลับ\n15.ปลดแบนได้ - ใครมียศปลดแบน ปลดได้เลย ไม่โดนแบน (ตามคำขอเจ้าของ)", inline=False)
+    embed.add_field(name="🔨 กันเตะ/แบน/ปลดแบน ULTIMATE (13-15)", value="13.กันเตะมือ - แบนคนกด\n14.กันแบนมือ - แบนคนกด + ปลดกลับ\n15.ปลดแบนได้ - ใครมียศปลดแบน ปลดได้เลย ไม่โดนแบน", inline=False)
     embed.add_field(name="🧩 กันสร้างของมั่ว ULTIMATE (16-22)", value="16.กัน Webhook มั่ว - ลบ + แบน\n17.กันอีโมจิมั่ว - ลบ + แบน\n18.กันสติกเกอร์มั่ว - แบน\n19.กันลิงก์เชิญมั่ว - ลบ + แบน\n20.กัน Integration มั่ว - แบน\n21.กัน Event มั่ว - ลบ + แบน\n22.กัน Template/Vanity URL มั่ว - แบน", inline=False)
     embed.add_field(name="🚫 กันสแปม ULTIMATE (23-28)", value="23.กันสแปม - 5 ข้อความ/5วิ / ซ้ำ 3 ครั้ง = ลบ + Timeout 10 นาที\n24.กันข้อความยาว 1,500 ตัว / แท็ก 4 คน/@everyone/@here / ลิงก์ / อีโมจิ 10 อัน = ลบ\n25.กันแก้ข้อความใส่ลิงก์ทีหลัง - ลบ\n26.กัน Ghost Ping - เตือน + Log\n27.กันส่งรูปสแปม 5 รูป/10วิ - ลบ\n28.กันแท็กเสียงเปิดกล้องมั่ว - แบน", inline=False)
     embed.add_field(name="💎 พิเศษ ULTIMATE", value="✅ ยศตกแต่งไม่มีความสามารถ ใส่ได้ ไม่แบน\n💥 กันยิงดิสทุกช่องทาง - สร้าง/ลบ ยศ ห้อง แบน รัวๆ = แบนทันที + กู้คืนอัตโนมัติ\n🔒 กันทุกการอนุญาต - ถ้ายศต่ำกว่าบอท ใช้สิทธิ์อะไรก็โดนแบนหมด\n📝 ดูบันทึกตรวจสอบได้ปกติ - แต่ใส่ให้คนอื่นไม่ได้ถ้าต่ำกว่าบอท", inline=False)
