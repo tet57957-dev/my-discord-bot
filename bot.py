@@ -399,8 +399,15 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_message(message):
-    if PAUSED or not message.guild or message.author.bot: return
-    if is_exempt(message.guild, message.author): return
+    if not message.guild or message.author.bot: return
+    # ถ้าเป็นคำสั่ง !protect !on !off ให้ทำงานได้เสมอแม้ตอน PAUSED หรือเป็นแอดมิน
+    if message.content.startswith("!protect") or message.content.startswith("!on") or message.content.startswith("!off") or message.content.startswith("!protection"):
+        await bot.process_commands(message)
+        return
+    if PAUSED: return
+    if is_exempt(message.guild, message.author):
+        await bot.process_commands(message)
+        return
     # กันสแปม
     now = time.time()
     spam_data[message.author.id].append(now)
